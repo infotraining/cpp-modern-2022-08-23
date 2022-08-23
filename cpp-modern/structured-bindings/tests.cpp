@@ -7,8 +7,13 @@
 #include <tuple>
 #include <vector>
 #include <ranges>
+#include <array>
+#include <set>
+#include <utility>
 
 #include "catch.hpp"
+
+using namespace std;
 
 namespace BeforeCpp17
 {
@@ -45,7 +50,7 @@ TEST_CASE("Before C++17")
     int min, max;
     double avg;
 
-    std::tie(min, max, avg) = calc_stats(data);
+    std::tie(min, max, std::ignore) = calc_stats(data);
 
     REQUIRE(min == 1);
     REQUIRE(max == 665);
@@ -62,3 +67,182 @@ TEST_CASE("Since C++17")
     REQUIRE(max == 665);
     REQUIRE(avg == Approx(141.333));
 }
+
+auto get_coordinates() -> int(&)[2]
+{
+    static int coord[] = { 1, 2 };
+
+    return coord;
+}
+
+std::array<int, 3> get_coord3D()
+{
+    return { 1, 2, 3 };
+}
+
+struct ErrorCode
+{
+    int ec;
+    const char* m;
+};
+
+ErrorCode open_file()
+{
+    return { 13, "file not found" };
+}
+
+TEST_CASE("structured bindings")
+{
+    SECTION("native array")
+    {
+        auto [x, y] = get_coordinates();
+        
+        REQUIRE(x == 1);
+        REQUIRE(y == 2);
+    }
+
+    SECTION("std array")
+    {
+        auto [x, y, z] = get_coord3D();
+    }
+
+    SECTION("std::pair")
+    {
+        std::set<int> values;
+
+        auto [pos, was_inserted] = values.insert(42);
+
+        REQUIRE(was_inserted);
+    }
+
+    SECTION("struct/class")
+    {
+        auto [error_code, error_message] = open_file();
+
+        REQUIRE(error_code == 13);
+    }
+}
+
+struct Timestamp
+{
+    int h, m, s;
+};
+
+TEST_CASE("how it works")
+{
+    auto [hours, minutes, seconds] = Timestamp{ 1, 20, 45 };
+
+    SECTION("is interpreted as")
+    {
+        auto entity = Timestamp{ 1, 20, 45 };
+        auto& hours = entity.h;
+        auto& minutes = entity.m;
+        auto& seconds = entity.s;
+    }
+}
+
+TEST_CASE("use cases")
+{
+    SECTION("iteration over map")
+    {
+        std::map<int, std::string> dict = { {1, "one"}, {2, "one"}, {3, "three"} };
+
+        SECTION("Before C++17")
+        {
+            for(const auto& kv : dict)
+            {
+                std::cout << kv.first << " - " << kv.second << "\n";
+            }
+        }
+
+        SECTION("Since C++17")
+        {
+            for (const auto& [key, value] : dict)
+            {
+                std::cout << key << " - " << value << "\n";
+            }
+        }
+    }
+
+    SECTION("for + multiple declaraion")
+    {
+        std::list lst{ "one", "two", "three" };
+
+        for(auto [index, it] = std::tuple{0, std::ranges::begin(lst)}; it != std::ranges::end(lst); ++index, ++it)
+        {
+            std::cout << index << " - " << *it << "\n";
+        }
+    }
+}
+
+/////////////////////////////////////////////////
+// tuple protocol for structured bindings
+
+enum class Something { some, thing };
+
+const std::map<Something, std::string> something_desc = { {Something::some, "some"}, {Something::thing, "thing"} };
+
+// step 1 - tuple_size<Type>
+namespace std
+{
+    template <>
+    struct tuple_size<Something>
+    {
+        static constexpr size_t value = 2;
+    };
+
+    // step 2 - std::tuple_element<Index, Type>
+    template <>
+    struct tuple_element<0, Something>
+    {
+        using type = std::underlying_type_t<Something>;
+    };
+
+    template <>
+    struct tuple_element<1, Something>
+    {
+        using type = std::string;
+    };
+}
+
+//// step 3 - get<Index>(Type)
+//template <size_t Index>
+//decltype(auto) get(Something)
+//{}
+//
+//template <>
+//decltype(auto) get<0>(Something sth)
+//{
+//    return static_cast<std::underlying_type_t<Something>>(sth);
+//} 
+//
+//template <>
+//decltype(auto) get<1>(Something sth)
+//{
+//    return something_desc.at(sth);
+//}
+
+template <size_t Index>
+auto get(Something sth)
+{
+   if constexpr (Index == 0)
+   {
+       return static_cast<std::underlying_type_t<Something>>(sth);
+   }
+   else
+   {
+       return something_desc.at(sth);
+   }
+}
+
+//TEST_CASE("tuple protocol")
+//{
+//    using namespace std::literals;
+//
+//    Something sth = Something::some;
+//
+//    const auto [value, description] = sth;
+//
+//    REQUIRE(value == 0);
+//    REQUIRE(description == "some");
+//}
