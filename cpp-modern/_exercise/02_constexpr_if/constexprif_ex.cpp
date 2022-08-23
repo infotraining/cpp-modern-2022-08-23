@@ -1,31 +1,58 @@
+#include "catch.hpp"
+
 #include <iostream>
 #include <list>
 #include <vector>
 
-#include "catch.hpp"
-
 using namespace std;
 
-template <typename Iterator>
-void advance_it(Iterator& it, size_t n)
+struct Fast
 {
+};
+
+struct Slow
+{
+};
+
+namespace Cpp17
+{
+    template <typename Iterator>
+    auto advance_it(Iterator& it, size_t n)
+    {
+        using ItCategory = typename std::iterator_traits<Iterator>::iterator_category;
+
+        // C++17
+        if constexpr (std::is_base_of_v<std::random_access_iterator_tag, ItCategory>)
+        {
+            it += n;
+            return Fast {};
+        }
+        else
+        {
+            for (size_t i = 0; i < n; ++i)
+                ++it;
+            return Slow {};
+        }
+    }
 }
 
-namespace AT
+namespace Cpp20
 {
-template <typename Iterator>
-void advance_it(Iterator& it, size_t n)
-{
-    if constexpr()
-    {
-        
+    template <std::input_iterator Iterator>
+    auto advance_it(Iterator& it, size_t n)
+    {        
+        if constexpr (std::random_access_iterator<Iterator>)
+        {
+            it += n;
+            return Fast {};
+        }
+        else
+        {
+            for (size_t i = 0; i < n; ++i)
+                ++it;
+            return Slow {};
+        }
     }
-    else
-    {
-
-    }
-}
-    
 }
 
 TEST_CASE("constexpr-if with iterator categories")
@@ -36,7 +63,9 @@ TEST_CASE("constexpr-if with iterator categories")
 
         auto it = data.begin();
 
-        advance_it(it, 3);
+        auto result = Cpp20::advance_it(it, 3);
+
+        static_assert(std::is_same_v<decltype(result), Fast>);
 
         REQUIRE(*it == 4);
     }
@@ -47,7 +76,9 @@ TEST_CASE("constexpr-if with iterator categories")
 
         auto it = data.begin();
 
-        advance_it(it, 3);
+        auto result = Cpp20::advance_it(it, 3);
+
+        static_assert(std::is_same_v<decltype(result), Slow>);
 
         REQUIRE(*it == 4);
     }
