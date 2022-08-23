@@ -19,4 +19,4 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 enable_testing()
 
 add_subdirectory(structured-bindings)
-add_subdirectory(ifs)
+#add_subdirectory(ifs)
