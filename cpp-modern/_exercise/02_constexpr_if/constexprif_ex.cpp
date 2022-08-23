@@ -11,6 +11,23 @@ void advance_it(Iterator& it, size_t n)
 {
 }
 
+namespace AT
+{
+template <typename Iterator>
+void advance_it(Iterator& it, size_t n)
+{
+    if constexpr()
+    {
+        
+    }
+    else
+    {
+
+    }
+}
+    
+}
+
 TEST_CASE("constexpr-if with iterator categories")
 {
     SECTION("random_access_iterator")
@@ -35,3 +52,5 @@ TEST_CASE("constexpr-if with iterator categories")
         REQUIRE(*it == 4);
     }
 }
+
+//

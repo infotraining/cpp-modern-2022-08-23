@@ -10,10 +10,12 @@ file(GLOB HEADERS_LIST "*.h" "*.hpp")
 
 add_executable(${TARGET_MAIN} ${SRC_LIST} ${HEADERS_LIST})
 
-find_package(Catch2 CONFIG REQUIRED)
-target_link_libraries(${TARGET_MAIN} PRIVATE Catch2::Catch2 Catch2::Catch2WithMain)
-target_compile_features(${TARGET_MAIN} PRIVATE cxx_std_20)
+#target_compile_features(${TARGET_MAIN} PRIVATE cxx_std_20)
 
-include(CTest)
-include(Catch)
-catch_discover_tests(${TARGET_MAIN})
+if (MSVC)
+    target_compile_options(${TARGET_MAIN} PUBLIC /std:c++latest)
+else()
+    target_compile_features(${TARGET_MAIN} PUBLIC cxx_std_20)
+endif()
+
+add_test(${TARGET_MAIN}_tests ${TARGET_MAIN})

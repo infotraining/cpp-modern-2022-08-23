@@ -1,11 +1,12 @@
 #include <algorithm>
-#include <catch2/catch_test_macros.hpp>
 #include <iostream>
 #include <mutex>
 #include <numeric>
 #include <queue>
 #include <string>
 #include <vector>
+
+#include "catch.hpp"
 
 TEST_CASE("if with initializer")
 {
@@ -114,7 +115,7 @@ template <typename THead, typename... TTail>
 void print(const THead& head, const TTail&... tail)
 {
     std::cout << head << " ";
-    
+
     if constexpr (sizeof...(tail) > 0)
     {        
         print(tail...);
