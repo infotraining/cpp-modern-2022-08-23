@@ -20,3 +20,4 @@ enable_testing()
 
 add_subdirectory(structured-bindings)
 add_subdirectory(ifs)
+add_subdirectory(_exercise/02_constexpr_if)
