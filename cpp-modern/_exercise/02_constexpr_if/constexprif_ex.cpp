@@ -21,7 +21,6 @@ namespace Cpp17
     {
         using ItCategory = typename std::iterator_traits<Iterator>::iterator_category;
 
-        // C++17
         if constexpr (std::is_base_of_v<std::random_access_iterator_tag, ItCategory>)
         {
             it += n;
@@ -83,5 +82,3 @@ TEST_CASE("constexpr-if with iterator categories")
         REQUIRE(*it == 4);
     }
 }
-
-//
