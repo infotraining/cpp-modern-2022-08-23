@@ -112,3 +112,20 @@ TEST_CASE("span")
 	void (*func_ptr)() noexcept{};
 	// func_ptr = bar;
 }
+
+template <typename T>
+void  deduce(T item)
+{}
+
+TEST_CASE("auto & type deduction in templates")
+{
+	auto a1 = "text";
+	deduce("text");
+
+	const int x = 10;
+	
+
+	auto& a2 = x;
+
+	auto&& ax = 42;
+}

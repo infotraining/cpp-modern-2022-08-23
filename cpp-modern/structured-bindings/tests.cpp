@@ -1,17 +1,17 @@
+#include "catch.hpp"
+
 #include <algorithm>
+#include <array>
 #include <iostream>
 #include <list>
 #include <map>
 #include <numeric>
+#include <ranges>
+#include <set>
 #include <string>
 #include <tuple>
-#include <vector>
-#include <ranges>
-#include <array>
-#include <set>
 #include <utility>
-
-#include "catch.hpp"
+#include <vector>
 
 using namespace std;
 
@@ -36,7 +36,7 @@ std::tuple<int, int, double> calc_stats(const TCollection& data)
 
     double avg = std::accumulate(std::ranges::begin(data), std::ranges::end(data), 0.0) / std::ranges::size(data); // since C++17 std::size()
 
-    return { *min_pos, *max_pos, avg };
+    return {*min_pos, *max_pos, avg};
 }
 
 TEST_CASE("Before C++17")
@@ -50,7 +50,7 @@ TEST_CASE("Before C++17")
     int min, max;
     double avg;
 
-    std::tie(min, max, std::ignore) = calc_stats(data);
+    std::tie(min, max, avg) = calc_stats(data);
 
     REQUIRE(min == 1);
     REQUIRE(max == 665);
@@ -59,7 +59,7 @@ TEST_CASE("Before C++17")
 
 TEST_CASE("Since C++17")
 {
-    int data[] = { 4, 42, 665, 1, 123, 13 };
+    int data[] = {4, 42, 665, 1, 123, 13};
 
     auto [min, max, avg] = calc_stats(data); // structured bindings
 
@@ -68,16 +68,16 @@ TEST_CASE("Since C++17")
     REQUIRE(avg == Approx(141.333));
 }
 
-auto get_coordinates() -> int(&)[2]
+auto get_coordinates() -> int (&)[2]
 {
-    static int coord[] = { 1, 2 };
+    static int coord[] = {1, 2};
 
     return coord;
 }
 
 std::array<int, 3> get_coord3D()
 {
-    return { 1, 2, 3 };
+    return {1, 2, 3};
 }
 
 struct ErrorCode
@@ -88,7 +88,7 @@ struct ErrorCode
 
 ErrorCode open_file()
 {
-    return { 13, "file not found" };
+    return {13, "file not found"};
 }
 
 TEST_CASE("structured bindings")
@@ -96,7 +96,7 @@ TEST_CASE("structured bindings")
     SECTION("native array")
     {
         auto [x, y] = get_coordinates();
-        
+
         REQUIRE(x == 1);
         REQUIRE(y == 2);
     }
@@ -130,11 +130,11 @@ struct Timestamp
 
 TEST_CASE("how it works")
 {
-    auto [hours, minutes, seconds] = Timestamp{ 1, 20, 45 };
+    auto [hours, minutes, seconds] = Timestamp {1, 20, 45};
 
     SECTION("is interpreted as")
     {
-        auto entity = Timestamp{ 1, 20, 45 };
+        auto entity = Timestamp {1, 20, 45};
         auto& hours = entity.h;
         auto& minutes = entity.m;
         auto& seconds = entity.s;
@@ -145,11 +145,11 @@ TEST_CASE("use cases")
 {
     SECTION("iteration over map")
     {
-        std::map<int, std::string> dict = { {1, "one"}, {2, "one"}, {3, "three"} };
+        std::map<int, std::string> dict = {{1, "one"}, {2, "one"}, {3, "three"}};
 
         SECTION("Before C++17")
         {
-            for(const auto& kv : dict)
+            for (const auto& kv : dict)
             {
                 std::cout << kv.first << " - " << kv.second << "\n";
             }
@@ -166,83 +166,93 @@ TEST_CASE("use cases")
 
     SECTION("for + multiple declaraion")
     {
-        std::list lst{ "one", "two", "three" };
+        std::list lst {"one", "two", "three"};
 
-        for(auto [index, it] = std::tuple{0, std::ranges::begin(lst)}; it != std::ranges::end(lst); ++index, ++it)
+        for (auto [index, it] = std::tuple {0, std::ranges::begin(lst)}; it != std::ranges::end(lst); ++index, ++it)
         {
             std::cout << index << " - " << *it << "\n";
         }
     }
 }
 
-/////////////////////////////////////////////////
-// tuple protocol for structured bindings
+//////////////////////////////////////////////////////
+// tuple-like protocol
 
-enum class Something { some, thing };
-
-const std::map<Something, std::string> something_desc = { {Something::some, "some"}, {Something::thing, "thing"} };
-
-// step 1 - tuple_size<Type>
-namespace std
+class Person
 {
-    template <>
-    struct tuple_size<Something>
-    {
-        static constexpr size_t value = 2;
-    };
+    std::string fname_;
+    std::string lname_;
+public:
+    Person(std::string fn, std::string ln) : fname_{fn}, lname_{ln}
+    {}
 
-    // step 2 - std::tuple_element<Index, Type>
-    template <>
-    struct tuple_element<0, Something>
+    const std::string& first_name() const
     {
-        using type = std::underlying_type_t<Something>;
-    };
+        return fname_;
+    }
 
-    template <>
-    struct tuple_element<1, Something>
+    const std::string& last_name() const
     {
-        using type = std::string;
-    };
+        return fname_;
+    }
+
+    std::string& first_name()
+    {
+        return fname_;
+    }
+
+    std::string& last_name()
+    {
+        return fname_;
+    }
+};
+
+template <>
+struct std::tuple_size<Person>
+{
+    static constexpr size_t value = 2;
+};
+
+template <std::size_t Index>
+struct std::tuple_element<Index, Person>
+{
+    using type = std::string;
+};
+
+template <size_t Index, typename T>
+decltype(auto) get(T&& p)
+{
+    if constexpr(Index == 0)
+        return p.first_name();
+    else 
+        return p.last_name();
 }
 
-//// step 3 - get<Index>(Type)
-//template <size_t Index>
-//decltype(auto) get(Something)
-//{}
-//
-//template <>
-//decltype(auto) get<0>(Something sth)
-//{
-//    return static_cast<std::underlying_type_t<Something>>(sth);
-//} 
-//
-//template <>
-//decltype(auto) get<1>(Something sth)
-//{
-//    return something_desc.at(sth);
-//}
-
-template <size_t Index>
-auto get(Something sth)
+TEST_CASE("Person + structured binding")
 {
-   if constexpr (Index == 0)
-   {
-       return static_cast<std::underlying_type_t<Something>>(sth);
-   }
-   else
-   {
-       return something_desc.at(sth);
-   }
-}
+    Person p1{"Jan", "Kowalski"};
 
-//TEST_CASE("tuple protocol")
-//{
-//    using namespace std::literals;
-//
-//    Something sth = Something::some;
-//
-//    const auto [value, description] = sth;
-//
-//    REQUIRE(value == 0);
-//    REQUIRE(description == "some");
-//}
+    SECTION("auto by value")
+    {
+        auto [name, surname] = p1;
+        name = "Adam";
+
+        REQUIRE(p1.first_name() == "Jan");
+    }
+
+    SECTION("auto by &")
+    {
+        auto& [name, surname] = p1;
+        name = "Adam";
+
+        REQUIRE(p1.first_name() == "Adam");
+    }
+
+    SECTION("auto by &&")
+    {
+        auto&& [name, surname] = p1;
+        name = "Adam";
+
+        REQUIRE(p1.first_name() == "Adam");
+    }
+}
