@@ -20,6 +20,23 @@ namespace VariadicTemplates
 	{
 		return std::unique_ptr<T>(new T(std::forward<TArgs>(args)...));
 	}
+
+	struct X
+	{
+		void foo()
+		{}
+	};
+
+	struct Y
+	{
+		void bar()
+		{}
+	};
+
+	template <typename... Ts>
+	struct Inheriter : Ts...
+	{
+	};
 }
 
 TEST_CASE("using variadic templates")
@@ -30,6 +47,8 @@ TEST_CASE("using variadic templates")
 	Tuple<> t2;
 
 	auto ptr = VariadicTemplates::make_unique<std::pair<int, std::string>>(42, std::string("forty_two"));
+
+	Inheriter<X, Y> i;
 }
 
 namespace BeforeCpp17
@@ -83,8 +102,6 @@ void call_for_all(F f, const TArgs&... args)
 {
 	(..., f(args));
 }
-
-
 
 TEST_CASE("fold expressions")
 {
