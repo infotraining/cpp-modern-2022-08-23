@@ -84,12 +84,12 @@ namespace ExplainDiamondOp
 	};
 }
 
-namespace std
-{
-	template <std::integral T>
-		requires (sizeof(T) >=4)
-	vector(std::initializer_list<T>) -> vector<long>;
-}
+// namespace std
+// {
+// 	template <std::integral T>
+// 		requires (sizeof(T) >=4)
+// 	vector(std::initializer_list<T>) -> vector<long>;
+// }
 
 TEST_CASE("diamond operator")
 {
@@ -107,4 +107,86 @@ TEST_CASE("diamond operator")
 	REQUIRE(std::is_sorted(vec.begin(), vec.end()));
 
 	std::vector backup(vec.begin(), vec.end());
+}
+
+//////////////////////////////////
+// CTAD aggrgates in C++17 & C++20
+
+template <typename T1, typename T2>
+struct Data
+{
+	T1 value;
+	T2 name;
+};
+
+// template <typename T1, typename T2>
+// Data(T1, T2) -> Data<T1, T2>;
+
+TEST_CASE("aggregates")
+{
+	Data d1{42, "d1"};
+
+	auto sptr = std::make_shared<Data<int, std::string>>(42, "d2");
+}
+
+///////////////////////////////////////////////////////////
+// CTAD in std lib
+
+TEST_CASE("pair")
+{
+	std::pair<int, std::string> p1{1, "text"};
+	auto p2 = std::make_pair(42, "text"s);
+
+	std::pair p3{665, "text"s};
+
+	int tab[10] = {};
+
+	std::pair p4{tab, "tab"}; // pair<int*, const char*>
+}
+
+TEST_CASE("tuple")
+{
+	std::tuple tpl1{1, 3.14, "text"}; // std::tuple<int, double, const char*>
+
+	std::pair p{665, "text"s};
+	std::tuple t2 = p;
+}
+
+TEST_CASE("optional")
+{
+	std::optional opt1{42}; // std::optional<int>
+	
+	std::optional opt2{opt1};   // std::optional<int>
+	std::optional opt3 = opt1;  // std::optional<int>
+}
+
+TEST_CASE("smart pointers")
+{
+	std::unique_ptr<int> uptr1{new int(42)}; // CTAD disabled
+	auto uptr2 = std::make_unique<std::vector<int>>(10, 1);
+
+	std::shared_ptr<std::vector<int>> sptr1{new std::vector<int>(10, -1)}; // CTAD disabled
+
+	std::shared_ptr sptr2 = std::move(uptr1);
+	std::weak_ptr wptr2 = sptr2;
+}
+
+TEST_CASE("function")
+{
+	std::function<int(int, int)> f1 = [](int a, int b) { return a + b; };
+
+	std::function f2 = [](int a, int b) { return a + b; }; // CTAD
+}
+
+TEST_CASE("containers")
+{
+	std::vector vec = {1, 2, 3, 4}; // std::vector<int>
+	REQUIRE(vec == std::vector{1, 2, 3, 4});
+
+	std::list lst(vec.begin(), vec.end()); // std::list<int>
+}
+
+TEST_CASE("array")
+{
+	std::array arr = {1, 2, 3, 4, 5, 6};
 }
