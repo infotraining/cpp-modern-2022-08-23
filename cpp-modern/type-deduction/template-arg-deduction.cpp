@@ -163,18 +163,24 @@ decltype(auto) fwd(T&& item)
     }
 }
 
-
-template <typename T>
-auto create_vec(T&& item)
+template <typename THead, typename... TTail>
+struct Helper
 {
-    std::vector<std::remove_cvref_t<T>> items;
+    using type_head = THead;
+};
+
+template <typename... TArgs>
+auto create_vec(TArgs&&... args)
+{
+    using TValue = std::common_type_t<TArgs...>;
+    std::vector<TValue> items;
 
     // if constexpr(std::is_reference_v<T>)
     //     items.push_back(item);
     // else
     //     items.push_back(std::move(item)); // static_cast<T&&>(item)
     
-    items.push_back(std::forward<T>(item));
+    (..., (items.push_back(std::forward<TArgs>(args))));
 
     return items;
 }
@@ -184,7 +190,7 @@ TEST_CASE("create_vec")
     using namespace std::literals;
     SECTION("passing rvalue")
     {
-        auto vec = create_vec(std::string("abc"));
+        auto vec = create_vec(std::string("abc"), "abc");
         REQUIRE(vec.front() == "abc"s);
     }
 
@@ -196,4 +202,6 @@ TEST_CASE("create_vec")
 
         REQUIRE(s.size() == 3);
     }
+
+    std::vector<std::unique_ptr<int>> ptrs = create_vec(std::make_unique<int>(13), std::make_unique<int>(42));
 }
